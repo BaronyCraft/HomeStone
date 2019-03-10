@@ -1,0 +1,24 @@
+name: HomeStone
+author: BaronyCraft
+description: Define HomeStones that, when placed, claim land for whoever places them, and define a warp that the owner can /home to and other people can /visit
+version: 1.0.0
+api-version: 1.13
+main: de.guntram.bukkit.HomeStone.Main
+softdepend: [ GriefPrevention ]
+commands:
+  home:
+    description: Go to a homestone
+    usage: /home <homename>
+  visit:
+    description: Configure GotoWorldGroup
+    usage: /visit <username> <homename>
+  homestone:
+    description: give a player a homestone
+    usage: /homestone give <username> <stonedef>
+permissions:
+  homestone.place:
+    description: Allows placing a homestone
+    default: true
+  homestone.give:
+    description: give a homestone to someone
+    default: op
