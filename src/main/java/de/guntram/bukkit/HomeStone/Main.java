@@ -166,7 +166,7 @@ public class Main extends JavaPlugin implements Listener {
                     }
                 }
                 player.sendMessage("Claimed this land and set a home for you");
-                Homelist.add(player, event.getBlock().getLocation().add(0, 1, 0));
+                Homelist.add(player, event.getBlock().getLocation().add(0.5, 1.05, 0.5));
                 Homelist.save(homesDef);
                 
             }
