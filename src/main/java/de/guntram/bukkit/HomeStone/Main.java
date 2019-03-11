@@ -106,7 +106,7 @@ public class Main extends JavaPlugin implements Listener {
                 return true;
             }
             int stoneIndex=Integer.parseInt(args[2])-1;
-            if (stones.size()<stoneIndex) {
+            if (stones.size()<=stoneIndex) {
                 sender.sendMessage("Not that many stones defined");
                 return true;
             } else if (stoneIndex<0) {
