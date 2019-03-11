@@ -69,4 +69,14 @@ class Homelist {
             ex.printStackTrace(System.err);            
         }
     }
+
+    static void updatePlayer(Player player) {
+        UUID uuid=player.getUniqueId();
+        String name=player.getName();
+        for (Home home:homes) {
+            if (home.getOwner().equals(uuid)) {
+                home.setOwnerName(name);
+            }
+        }
+    }
 }

@@ -19,6 +19,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.Plugin;
@@ -200,4 +201,10 @@ public class Main extends JavaPlugin implements Listener {
                 player.getUniqueId(), null, null, player);
         return result.succeeded;
     }
+
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onPlayerJoinEvent(PlayerJoinEvent event) {
+        Homelist.updatePlayer(event.getPlayer());
+        Homelist.save(homesDef);
+    }    
 }
