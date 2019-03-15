@@ -34,7 +34,7 @@ class Homelist {
     static List<Home> get(String name, World world) {
         List<Home> result=new ArrayList<>();
         for (Home home:homes) {
-            if (home.getOwnerName().equals(name)
+            if (home.getOwnerName().equalsIgnoreCase(name)
             &&  home.getLocation().getWorld().getName().equals(world.getName())) {
                 result.add(home);
             }
