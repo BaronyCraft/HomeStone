@@ -70,6 +70,15 @@ class Homelist {
         }
     }
 
+    static void resetWorld(String world) {
+        List<Home> newHomes=new ArrayList<>(homes.size());
+        for (Home home: homes) {
+            if (!(home.worldName.equalsIgnoreCase(world)))
+                newHomes.add(home);
+        }
+        homes=newHomes;
+    }
+
     static void updatePlayer(Player player) {
         UUID uuid=player.getUniqueId();
         String name=player.getName();
