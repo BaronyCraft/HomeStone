@@ -13,8 +13,8 @@ commands:
     description: Configure GotoWorldGroup
     usage: /visit <username> <homename>
   homestone:
-    description: give a player a homestone
-    usage: /homestone give <username> <stonedef>
+    description: administrative commands
+    usage: /homestone give <username> <stonedef> | list | resetworld <worldname>
 permissions:
   homestone.place:
     description: Allows placing a homestone

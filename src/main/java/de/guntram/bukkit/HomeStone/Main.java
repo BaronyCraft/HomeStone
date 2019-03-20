@@ -44,6 +44,7 @@ public class Main extends JavaPlugin implements Listener {
         Homelist.load(homesDef);
         stones=HomeStoneDefinition.load(stonesDef);
         griefPrevention = getServer().getPluginManager().getPlugin("GriefPrevention");
+        getCommand("homestone").setTabCompleter(new HomeStoneTabCompleter(stones));
         getServer().getPluginManager().registerEvents(this, this);
     }
     
@@ -99,13 +100,31 @@ public class Main extends JavaPlugin implements Listener {
             }
             return true;
         }
+        if (commandName.equals("homestone") && !sender.hasPermission("homestone.give")) {
+            sender.sendMessage("You may not do that");
+            return true;
+        }
         if (commandName.equals("homestone") && args.length==3 && args[0].equals("give")) {
             Player player = Bukkit.getPlayer(args[1]);
             if (player==null) {
                 sender.sendMessage("Player "+args[1]+" not found");
                 return true;
             }
-            int stoneIndex=Integer.parseInt(args[2])-1;
+            int stoneIndex;
+            try {
+                stoneIndex=Integer.parseInt(args[2])-1;
+            } catch (NumberFormatException ex) {
+                stoneIndex=-1;
+                for (int i=0; i<stones.size(); i++) {
+                    if (args[2].equalsIgnoreCase(stones.get(i).givenName)) {
+                        stoneIndex=i;
+                        break;
+                    }
+                }
+                if (stoneIndex==-1) {
+                    sender.sendMessage("No stone with name "+args[2]+", try /homestone list");
+                }
+            }
             if (stones.size()<=stoneIndex) {
                 sender.sendMessage("Not that many stones defined");
                 return true;
@@ -121,6 +140,16 @@ public class Main extends JavaPlugin implements Listener {
             meta.setLore(lore);
             stack.setItemMeta(meta);
             player.getInventory().addItem(stack);
+            return true;
+        }
+        if (commandName.equals("homestone") && args.length==2 && args[0].equals("resetworld")) {
+            Homelist.resetWorld(args[1]);
+            Homelist.save(homesDef);
+        }
+        if (commandName.equals("homestone") && args.length==1 && args[0].equals("list")) {
+            for (int i=0; i<stones.size(); i++) {
+                sender.sendMessage("Stone "+(i+1)+": "+stones.get(i).givenName);
+            }
             return true;
         }
         return false;

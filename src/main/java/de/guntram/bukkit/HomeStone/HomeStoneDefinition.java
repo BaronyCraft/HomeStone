@@ -28,6 +28,7 @@ public class HomeStoneDefinition {
     String material;
     String displayName;
     String lore;
+    String givenName;
     String[] worldsToPlaceIn;
     int stoneNumber;
     int claimRange;
@@ -37,6 +38,7 @@ public class HomeStoneDefinition {
         material=Material.BEDROCK.name();
         displayName="HomeStone";
         lore="Place this to claim land and set your home";
+        givenName="FirstStone";
         worldsToPlaceIn=new String[]{"*"};
         stoneNumber=-1;
         claimRange=100;
