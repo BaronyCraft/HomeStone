@@ -65,7 +65,12 @@ public class Main extends JavaPlugin implements Listener {
             }
             int homeIndex;
             if (args.length>0) {
-                homeIndex=Integer.parseInt(args[0])-1;
+                try {
+                    homeIndex=Integer.parseInt(args[0])-1;
+                } catch (NumberFormatException ex) {
+                    sender.sendMessage("Use numerical home destinations");
+                    return true;
+                }
             } else {
                 homeIndex=0;
             }
