@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.logging.Level;
 import me.ryanhamshire.GriefPrevention.Claim;
 import me.ryanhamshire.GriefPrevention.CreateClaimResult;
 import me.ryanhamshire.GriefPrevention.GriefPrevention;
@@ -108,7 +109,7 @@ public class Main extends JavaPlugin implements Listener {
             if (homes.size()<=homeIndex) {
                 sender.sendMessage(args[0]+" has only "+homes.size()+" homes set");
             } else {
-                if (safeToVisit(homes.get(homeIndex).getLocation())) {
+                if (safeToVisit(homes.get(homeIndex).getLocation(), args[0], homeIndex+1)) {
                     lastVisits.put(((Player)sender).getUniqueId(), new VisitHistoryEntry(((Player)sender).getLocation(), System.currentTimeMillis()));
                     ((Player)sender).teleport(homes.get(homeIndex).getLocation());
                 } else {
@@ -172,23 +173,29 @@ public class Main extends JavaPlugin implements Listener {
         return false;
     }
     
-    private boolean safeToVisit(Location loc) {
+    private boolean safeToVisit(Location loc, String homeOwner, int homeNumber) {
         try {
             int blockx=loc.getBlockX();
             int blocky=loc.getBlockY();
             int blockz=loc.getBlockZ();
             for (int dx=-1; dx<=1; dx++) {
                 for (int dz=-1; dz<=1; dz++) {
-                    for (int dy=0; dy<=3; dy++) {
+                    for (int dy=0; dy<=2; dy++) {
                         Block block=loc.getWorld().getBlockAt(blockx+dx, blocky+dy, blockz+dz);
                         if (!(block.isEmpty())) {
+                            getLogger().log(Level.WARNING, "{0}''s home {1} is not safe to visit; Block at {2}/{3}/{4} is {5}", new Object[]{homeOwner, homeNumber, blockx+dx, blocky+dy, blockz+dz, block.getType()});
                             return false;
                         }
                     }
                 }
             }
-            return loc.getWorld().getBlockAt(blockx, blocky-1, blockz).getType().isSolid();
+            if (!(loc.getWorld().getBlockAt(blockx, blocky-1, blockz).getType().isSolid())) {
+                getLogger().log(Level.WARNING, "{0}''s home {1} is not safe to visit; would stand on {2}", new Object[]{homeOwner, homeNumber, loc.getWorld().getBlockAt(blockx, blocky-1, blockz).getType()});
+                return false;
+            }
+            return true;
         } catch (NullPointerException ex) {
+                getLogger().log(Level.SEVERE, "NPE when visiting {0}''s home {1}", new Object[]{homeOwner, homeNumber});
                 return false;
         }
     }
@@ -274,7 +281,7 @@ public class Main extends JavaPlugin implements Listener {
         Homelist.save(homesDef);
     }
     
-    @EventHandler(ignoreCancelled = true)
+    @EventHandler(ignoreCancelled = true, priority=EventPriority.LOWEST)
     public void onPlayerDamageEvent(EntityDamageEvent event) {
         if (!(event.getEntityType() == EntityType.PLAYER))
             return;
@@ -283,6 +290,7 @@ public class Main extends JavaPlugin implements Listener {
         if (visitInfo == null || visitInfo.when < System.currentTimeMillis() - 5*1000) {
             return;
         }
+        getLogger().log(Level.WARNING, "Player {0} would have taken damage at {1}, {2} seconds after visiting", new Object[]{player.getName(), player.getLocation(), visitInfo.when-System.currentTimeMillis()});
         player.sendMessage("You visited a location that isn't safe, returning you to where you were before");
         player.teleport(visitInfo.from);
         event.setCancelled(true);
