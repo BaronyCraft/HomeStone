@@ -3,7 +3,10 @@ package de.guntram.bukkit.HomeStone;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import me.ryanhamshire.GriefPrevention.Claim;
 import me.ryanhamshire.GriefPrevention.CreateClaimResult;
 import me.ryanhamshire.GriefPrevention.GriefPrevention;
@@ -14,11 +17,13 @@ import org.bukkit.block.Block;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -31,6 +36,7 @@ public class Main extends JavaPlugin implements Listener {
     
     private File stonesDef, homesDef;
     private List<HomeStoneDefinition> stones;
+    private Map<UUID, VisitHistoryEntry> lastVisits;
     private Plugin griefPrevention;
     
     @Override 
@@ -43,6 +49,7 @@ public class Main extends JavaPlugin implements Listener {
         homesDef=new File(this.getDataFolder(), "homes.json");
         Homelist.load(homesDef);
         stones=HomeStoneDefinition.load(stonesDef);
+        lastVisits=new HashMap<>();
         griefPrevention = getServer().getPluginManager().getPlugin("GriefPrevention");
         getCommand("homestone").setTabCompleter(new HomeStoneTabCompleter(stones));
         getServer().getPluginManager().registerEvents(this, this);
@@ -101,7 +108,12 @@ public class Main extends JavaPlugin implements Listener {
             if (homes.size()<=homeIndex) {
                 sender.sendMessage(args[0]+" has only "+homes.size()+" homes set");
             } else {
-                ((Player)sender).teleport(homes.get(homeIndex).getLocation());
+                if (safeToVisit(homes.get(homeIndex).getLocation())) {
+                    lastVisits.put(((Player)sender).getUniqueId(), new VisitHistoryEntry(((Player)sender).getLocation(), System.currentTimeMillis()));
+                    ((Player)sender).teleport(homes.get(homeIndex).getLocation());
+                } else {
+                    sender.sendMessage("That home is not safe, not teleporting");
+                }
             }
             return true;
         }
@@ -160,7 +172,27 @@ public class Main extends JavaPlugin implements Listener {
         return false;
     }
     
-    
+    private boolean safeToVisit(Location loc) {
+        try {
+            int blockx=loc.getBlockX();
+            int blocky=loc.getBlockY();
+            int blockz=loc.getBlockZ();
+            for (int dx=-1; dx<=1; dx++) {
+                for (int dz=-1; dz<=1; dz++) {
+                    for (int dy=0; dy<=3; dy++) {
+                        Block block=loc.getWorld().getBlockAt(blockx+dx, blocky+dy, blockz+dz);
+                        if (!(block.isEmpty())) {
+                            return false;
+                        }
+                    }
+                }
+            }
+            return loc.getWorld().getBlockAt(blockx, blocky-1, blockz).getType().isSolid();
+        } catch (NullPointerException ex) {
+                return false;
+        }
+    }
+
     @EventHandler(priority=EventPriority.NORMAL)
     public void onPlaceBlock(BlockPlaceEvent event) {
         if (event.isCancelled())
@@ -240,5 +272,19 @@ public class Main extends JavaPlugin implements Listener {
     public void onPlayerJoinEvent(PlayerJoinEvent event) {
         Homelist.updatePlayer(event.getPlayer());
         Homelist.save(homesDef);
-    }    
+    }
+    
+    @EventHandler(ignoreCancelled = true)
+    public void onPlayerDamageEvent(EntityDamageEvent event) {
+        if (!(event.getEntityType() == EntityType.PLAYER))
+            return;
+        Player player=(Player)event.getEntity();
+        VisitHistoryEntry visitInfo=lastVisits.get(player.getUniqueId());
+        if (visitInfo == null || visitInfo.when < System.currentTimeMillis() - 5*1000) {
+            return;
+        }
+        player.sendMessage("You visited a location that isn't safe, returning you to where you were before");
+        player.teleport(visitInfo.from);
+        event.setCancelled(true);
+    }
 }
