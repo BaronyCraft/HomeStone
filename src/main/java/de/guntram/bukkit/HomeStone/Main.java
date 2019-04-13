@@ -1,6 +1,7 @@
 package de.guntram.bukkit.HomeStone;
 
 import java.io.File;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -164,6 +165,7 @@ public class Main extends JavaPlugin implements Listener {
         if (commandName.equals("homestone") && args.length==2 && args[0].equals("resetworld")) {
             Homelist.resetWorld(args[1]);
             Homelist.save(homesDef);
+            return true;
         }
         if (commandName.equals("homestone") && args.length==1 && args[0].equals("list")) {
             for (int i=0; i<stones.size(); i++) {
@@ -228,12 +230,33 @@ public class Main extends JavaPlugin implements Listener {
                     return;
                 }
                 if (griefPrevention != null) {
-                    if (isCloseToClaim(player, def.minDistanceFromOthers) != null) {
+                    if (findBlockingClaim(player, event.getBlock().getLocation(), def.minDistanceFromOthers) != null) {
                         player.sendMessage("You are too close to another claim");
                         event.setCancelled(true);
                         return;
                     }
-                    if (!createClaim(player, def.claimRange)) {
+                    boolean claimed=false;
+                    if (def.claimRange > 0) {
+                        claimed=createClaim(player, event.getBlock().getLocation(), def.claimRange);
+                    } else if (def.cornerGetterClass != null) {
+                        try {
+                            Class getterClass=Class.forName(def.cornerGetterClass);
+                            Method getNortWest=getterClass.getDeclaredMethod("getNorthWest", Location.class);
+                            Method getSouthEast=getterClass.getDeclaredMethod("getSouthEast", Location.class);
+                            Location nw=(Location) getNortWest.invoke(null, event.getBlock().getLocation());
+                            Location se=(Location) getSouthEast.invoke(null, event.getBlock().getLocation());
+                            if (nw == null || se == null) {
+                                player.sendMessage("You cannot claim there");
+                            } else {
+                                claimed=createClaim(player, nw, se);
+                            }
+                        } catch (Exception ex) {
+                            getLogger().log(Level.WARNING, "Exception trying to use {0}: {1}\n{2}", new Object[]{def.cornerGetterClass, ex, ex.getStackTrace()});
+                            player.sendMessage("Admin's haven't set up claiming in this world correctly");
+                        }
+                    }
+                    
+                    if (!claimed) {
                         player.sendMessage("Claiming didn't work for some reason");
                         event.setCancelled(true);
                         return;
@@ -247,31 +270,41 @@ public class Main extends JavaPlugin implements Listener {
         }
     }
     
-    private Claim isCloseToClaim(Player player, int minDistance) {
+    private Claim findBlockingClaim(Player player, Location where, int minDistance) {
         Collection<Claim> claims = GriefPrevention.instance.dataStore.getClaims();
         for (Claim claim:claims) {
             Location topleft=claim.getLesserBoundaryCorner();
             Location botright=claim.getGreaterBoundaryCorner();
-            if (topleft.getWorld() != player.getWorld()) {
+            if (topleft.getWorld() != where.getWorld()) {
                 continue;
             }
-            if (topleft .getBlockX() - minDistance < player.getLocation().getBlockX()
-            &&  topleft .getBlockZ() - minDistance < player.getLocation().getBlockZ()
-            &&  botright.getBlockX() + minDistance > player.getLocation().getBlockX()
-            &&  botright.getBlockZ() + minDistance > player.getLocation().getBlockZ()) {
+            if (topleft .getBlockX() - minDistance < where.getBlockX()
+            &&  topleft .getBlockZ() - minDistance < where.getBlockZ()
+            &&  botright.getBlockX() + minDistance > where.getBlockX()
+            &&  botright.getBlockZ() + minDistance > where.getBlockZ()) {
+                // todo: if player may build there then it's ok
                 return claim;
             }
         }
         return null;
     }
     
-    private boolean createClaim(Player player, int range) {
-        Location loc=player.getLocation();
+    private boolean createClaim(Player player, Location around, int range) {
         CreateClaimResult result=GriefPrevention.instance.dataStore.createClaim(
                 player.getWorld(),
-                loc.getBlockX()-range, loc.getBlockX()+range,
+                around.getBlockX()-range, around.getBlockX()+range,
                 0, 255,
-                loc.getBlockZ()-range, loc.getBlockZ()+range,
+                around.getBlockZ()-range, around.getBlockZ()+range,
+                player.getUniqueId(), null, null, player);
+        return result.succeeded;
+    }
+    
+    private boolean createClaim(Player player, Location northwest, Location southeast) {
+        CreateClaimResult result=GriefPrevention.instance.dataStore.createClaim(
+                player.getWorld(),
+                northwest.getBlockX(), southeast.getBlockX(),
+                northwest.getBlockY(), southeast.getBlockY(),
+                northwest.getBlockZ(), southeast.getBlockZ(),
                 player.getUniqueId(), null, null, player);
         return result.succeeded;
     }

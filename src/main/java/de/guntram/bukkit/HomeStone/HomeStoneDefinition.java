@@ -33,6 +33,7 @@ public class HomeStoneDefinition {
     int stoneNumber;
     int claimRange;
     int minDistanceFromOthers;
+    String cornerGetterClass;
     
     public HomeStoneDefinition() {
         material=Material.BEDROCK.name();
@@ -43,6 +44,7 @@ public class HomeStoneDefinition {
         stoneNumber=-1;
         claimRange=100;
         minDistanceFromOthers=110;
+        cornerGetterClass = null;
     }
     
     public boolean canPlaceIn(World world) {
