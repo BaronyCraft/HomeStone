@@ -2,6 +2,7 @@ package de.guntram.bukkit.HomeStone;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -154,7 +155,7 @@ public class Main extends JavaPlugin implements Listener {
             ItemMeta meta=stack.getItemMeta();
             meta.setDisplayName(stones.get(stoneIndex).displayName);
             ArrayList<String>lore=new ArrayList<>();
-            lore.add(stones.get(stoneIndex).lore);
+            lore.addAll(Arrays.asList(stones.get(stoneIndex).lore.split("_")));
             meta.setLore(lore);
             stack.setItemMeta(meta);
             player.getInventory().addItem(stack);
